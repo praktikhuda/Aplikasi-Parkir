@@ -13,7 +13,6 @@ import java.sql.ResultSet;
 import java.sql.Statement;
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Random;
 import java.util.Scanner;
@@ -46,6 +45,8 @@ public class TableParkir {
     private String username;
     private String password;
     private String nama;
+    
+    private int banyakJumlah;
     
     
     public String getId_Masuk(){
@@ -118,6 +119,10 @@ public class TableParkir {
         this.nama = nama;
     }
     
+    public int getBanyakJumlah(){
+        return banyakJumlah;
+    }
+    
 //    Membuat ID dengan cara mengacak angka
     public String generateRandomInt() {
         String id = "";
@@ -153,7 +158,7 @@ public class TableParkir {
     public int tambahParkirKeluar(){
         sql = "insert into parkir_keluar values ('"+id_keluar+"', '"+no_plat+"', '"+waktu_masuk+"', '"+waktu_keluar+"', '"+jenis+"', '"+harga+"')";
         return ganti(sql);
-    }
+    }   
     
 //    Cari Riwayat Parkir Masuk berdasarkan Plat Nomer
     public boolean cariRiwayat(String no_plat){
@@ -177,6 +182,37 @@ public class TableParkir {
             st.close();
             con.close();
         } catch (Exception e) {
+            System.out.println("Gagal akses database");
+        }
+        return ketemu;
+    }
+    
+//    Menampilkan semua data di parkir_keluar
+    public boolean cariParkirKeluar(){
+        boolean ketemu = false;
+        try{
+            con = Koneksi.getKoneksi();
+            st = con.createStatement();
+            sql = "select * from parkir_keluar order by waktu_masuk desc";
+            rs = st.executeQuery(sql);
+            while(rs.next()){
+                String id_keluar = rs.getString("id_keluar");
+                String no_plat = rs.getString("no_plat");
+                String waktu_masuk = rs.getString("waktu_masuk");
+                String waktu_keluar = rs.getString("waktu_keluar");
+                String jenis = rs.getString("jenis");
+                int harga = rs.getInt("harga");
+                
+                System.out.println("id : "+id_keluar);
+                System.out.println("no : "+no_plat);
+                System.out.println("masuk : "+waktu_masuk);
+                System.out.println("keluar : "+waktu_keluar);
+                System.out.println("jenis : "+jenis);
+                System.out.println("harga : "+harga);
+                System.out.println("==========");
+                
+            }
+        }catch(Exception e){
             System.out.println("Gagal akses database");
         }
         return ketemu;
@@ -216,8 +252,8 @@ public class TableParkir {
                 ketemu = false;
             }
             
-            st.close();//Close statement
-            con.close(); //Close database Connection
+            st.close();
+            con.close();
         } catch (Exception e) {}
             return ketemu;
     }
@@ -259,14 +295,6 @@ public class TableParkir {
         
             boolean ketemu = tp.cariRiwayat(cariPlat);
             if(ketemu){
-//                Waktu sekarang
-                LocalDateTime now = LocalDateTime.now();
-                DateTimeFormatter formatDateTime = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-                DateTimeFormatter formatDateTimeM = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.S");
-                DateTimeFormatter formatTime = DateTimeFormatter.ofPattern("HH:mm:ss");
-                String wakkt = now.format(formatTime);
-                String wakkdt = now.format(formatDateTime);
-                System.out.println("Waktu wakkt : "+wakkt);
                 
 //                Untuk mengambil data di parkir_masuk
                 String id = tp.getId_Masuk();
@@ -279,26 +307,28 @@ public class TableParkir {
                 System.out.println("Waktu : "+tp.getWaktu_Masuk());
                 System.out.println("Jenis : "+tp.getJenis());
                 
+//                Convert jenis tanggal
+                DateTimeFormatter formatDateTime = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+                DateTimeFormatter formatDateTimeM = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.S");
+                DateTimeFormatter formatTime = DateTimeFormatter.ofPattern("HH:mm:ss");
+               
+//                Menghitung Selesih Tanggal
+                LocalDateTime now = LocalDateTime.now();
                 LocalDateTime before = LocalDateTime.parse(wakm, formatDateTimeM);
-                String wakmm = before.format(formatDateTime);
-                String bef = before.format(formatTime);
+                Duration duration = Duration.between(before, now);
                 
-                LocalTime time3 = LocalTime.parse(bef);
-//                LocalTime time1 = LocalTime.parse(wakm);
-                LocalTime time2 = LocalTime.parse(wakkt);
-                Duration duration = Duration.between(time3, time2);
                 long hours = duration.toHours();
-                
                 int hoursInt = (int)hours;
-                System.out.println("Durasi : "+duration);
                 System.out.println("Jam : "+hoursInt);
                 
+//                Buat variabel
+                String waktu1 = now.format(formatDateTime);
+                String waktu2 = before.format(formatDateTime);
+                
                 int harga = 0;
-                int hargaMin = -10000;
+                
                 if(hoursInt == 0){
                     harga = 10000;
-                }else if(hoursInt < 0){
-                    harga = hoursInt * hargaMin;
                 }else if(hoursInt >= 1){
                     harga = hoursInt * 10000;
                 }else{
@@ -307,8 +337,8 @@ public class TableParkir {
                 
                 tp.setId_Keluar(id);
                 tp.setNo_Plat(no);
-                tp.setWaktu_Masuk(wakmm);
-                tp.setWaktu_Keluar(wakkdt);
+                tp.setWaktu_Masuk(waktu2);
+                tp.setWaktu_Keluar(waktu1);
                 tp.setJenis(jenis);
                 tp.setHarga(harga);
                 
@@ -347,6 +377,8 @@ public class TableParkir {
                 System.out.println("Username tidak ketemu!!");
             }
             
+        }else if(masuk == 4){
+            tp.cariParkirKeluar();
         }else{
             System.out.println();
         }
